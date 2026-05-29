@@ -16,6 +16,7 @@ const MODEL_KEY_BY_PURPOSE: Record<
   "modelScorer" | "modelTailoring" | "modelProjectSelection"
 > = {
   scoring: "modelScorer",
+  scoringLowTier: "modelScorer",
   tailoring: "modelTailoring",
   projectSelection: "modelProjectSelection",
 };
@@ -55,12 +56,21 @@ function resolveModelFromSettings(
   const purposeOverride = settings?.llmPurposeOverrides?.value?.[purpose];
   const purposeProvider = purposeOverride?.provider?.trim() || defaultProvider;
   const purposeModel = purposeOverride?.model?.trim();
-  const resolvedPurposeModel = readStringSettingValue(
-    settings?.[MODEL_KEY_BY_PURPOSE[purpose]],
-  );
 
   if (purposeModel) return purposeModel;
-  if (resolvedPurposeModel) return resolvedPurposeModel;
+
+  // Only consult the pre-computed purpose model setting when this purpose has
+  // an explicit entry in llmPurposeOverrides.  Without one the pre-computed
+  // value may have been derived from a sibling purpose that shares the same
+  // model-setting key (e.g. "scoring" and "scoringLowTier" both map to
+  // "modelScorer"), which would return the wrong model.
+  if (purposeOverride) {
+    const resolvedPurposeModel = readStringSettingValue(
+      settings?.[MODEL_KEY_BY_PURPOSE[purpose]],
+    );
+    if (resolvedPurposeModel) return resolvedPurposeModel;
+  }
+
   if (purposeProvider && purposeProvider !== defaultProvider) {
     return getDefaultModelForProvider(purposeProvider);
   }

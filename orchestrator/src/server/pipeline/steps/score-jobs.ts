@@ -2,7 +2,10 @@ import { logger } from "@infra/logger";
 import * as jobsRepo from "@server/repositories/jobs";
 import * as settingsRepo from "@server/repositories/settings";
 import { generateJobBrief } from "@server/services/job-brief";
-import { scoreJobSuitability } from "@server/services/scorer";
+import {
+  getScoringPurposeForJob,
+  scoreJobSuitability,
+} from "@server/services/scorer";
 import * as visaSponsors from "@server/services/visa-sponsors/index";
 import { asyncPool } from "@server/utils/async-pool";
 import type { Job } from "@shared/types";
@@ -64,8 +67,9 @@ export async function scoreJobsStep(args: {
         return;
       }
 
+      const purpose = getScoringPurposeForJob(job);
       const [{ score, reason }, jobBrief] = await Promise.all([
-        scoreJobSuitability(job, args.profile),
+        scoreJobSuitability(job, args.profile, purpose),
         generateJobBrief(job.jobDescription, { jobId: job.id }),
       ]);
       if (args.shouldCancel?.()) return;

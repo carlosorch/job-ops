@@ -38,6 +38,7 @@ export type LlmProviderId = (typeof LLM_PROVIDER_VALUES)[number];
 
 export const LLM_PURPOSE_VALUES = [
   "scoring",
+  "scoringLowTier",
   "tailoring",
   "projectSelection",
 ] as const;

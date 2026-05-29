@@ -7,7 +7,11 @@ import { getDefaultPromptTemplate } from "@shared/prompt-template-definitions.js
 import type { Job } from "@shared/types";
 import type { JsonSchemaDefinition } from "./llm/types";
 import { stripMarkdownCodeFences } from "./llm/utils/json";
-import { createConfiguredLlmService, resolveLlmModel } from "./modelSelection";
+import {
+  createConfiguredLlmService,
+  type LlmModelPurpose,
+  resolveLlmModel,
+} from "./modelSelection";
 import { renderPromptTemplate } from "./prompt-templates";
 import { getEffectiveSettings } from "./settings";
 
@@ -29,6 +33,25 @@ type ScoringPreferences = {
 };
 
 type ProfileRecord = Record<string, unknown>;
+
+const LOW_TIER_TITLE_PATTERNS = [
+  /mobile dev/i,
+  /ios/i,
+  /android dev/i,
+  /\bc developer\b/i,
+  /\bc\+\+ dev/i,
+  /\bc\+\+ developer/i,
+  /\bc software engineer\b/i,
+  /\bc\b.*programmer/i,
+];
+
+export function getScoringPurposeForJob(
+  job: Pick<Job, "title">,
+): LlmModelPurpose {
+  return LOW_TIER_TITLE_PATTERNS.some((pattern) => pattern.test(job.title))
+    ? "scoringLowTier"
+    : "scoring";
+}
 
 /** JSON schema for suitability scoring response */
 const SCORING_SCHEMA: JsonSchemaDefinition = {
@@ -98,9 +121,10 @@ function applySalaryPenalty(
 export async function scoreJobSuitability(
   job: Job,
   profile: Record<string, unknown>,
+  purpose: LlmModelPurpose = "scoring",
 ): Promise<SuitabilityResult> {
   const [model, settings] = await Promise.all([
-    resolveLlmModel("scoring"),
+    resolveLlmModel(purpose),
     getEffectiveSettings(),
   ]);
 
@@ -111,7 +135,7 @@ export async function scoreJobSuitability(
       getDefaultPromptTemplate("scoringPromptTemplate"),
   });
 
-  const llm = await createConfiguredLlmService("scoring");
+  const llm = await createConfiguredLlmService(purpose);
   const result = await llm.callJson<{ score: number; reason: string }>({
     model,
     messages: [{ role: "user", content: prompt }],

@@ -135,6 +135,7 @@ const MODEL_KEY_BY_PURPOSE: Record<
   "modelScorer" | "modelTailoring" | "modelProjectSelection"
 > = {
   scoring: "modelScorer",
+  scoringLowTier: "modelScorer",
   tailoring: "modelTailoring",
   projectSelection: "modelProjectSelection",
 };

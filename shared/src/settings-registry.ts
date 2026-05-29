@@ -193,6 +193,7 @@ const llmPurposeOverrideSchema = z.object({
 export const llmPurposeOverridesSchema = z
   .object({
     scoring: llmPurposeOverrideSchema.optional(),
+    scoringLowTier: llmPurposeOverrideSchema.optional(),
     tailoring: llmPurposeOverrideSchema.optional(),
     projectSelection: llmPurposeOverrideSchema.optional(),
   })
@@ -201,6 +202,7 @@ export const llmPurposeOverridesSchema = z
 export const llmPurposeApiKeysSchema = z
   .object({
     scoring: z.string().trim().max(2000).nullable().optional(),
+    scoringLowTier: z.string().trim().max(2000).nullable().optional(),
     tailoring: z.string().trim().max(2000).nullable().optional(),
     projectSelection: z.string().trim().max(2000).nullable().optional(),
   })

@@ -14,7 +14,10 @@ import { getSetting } from "@server/repositories/settings";
 import { generateJobBrief } from "@server/services/job-brief";
 import { inferManualJobDetails } from "@server/services/manualJob";
 import { getProfile } from "@server/services/profile";
-import { scoreJobSuitability } from "@server/services/scorer";
+import {
+  getScoringPurposeForJob,
+  scoreJobSuitability,
+} from "@server/services/scorer";
 import { settingsRegistry } from "@shared/settings-registry";
 import { type Request, type Response, Router } from "express";
 import { JSDOM } from "jsdom";
@@ -370,8 +373,9 @@ manualJobsRouter.post("/import", async (req: Request, res: Response) => {
           throw new Error("Invalid resume profile format");
         }
         const profile = rawProfile as Record<string, unknown>;
+        const purpose = getScoringPurposeForJob(processedJob);
         const [{ score, reason }, jobBrief] = await Promise.all([
-          scoreJobSuitability(processedJob, profile),
+          scoreJobSuitability(processedJob, profile, purpose),
           generateJobBrief(processedJob.jobDescription, {
             jobId: processedJob.id,
           }),
