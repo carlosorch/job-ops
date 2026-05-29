@@ -167,6 +167,7 @@ export interface RunJobSpyOptions {
   countryIndeed?: string;
   linkedinFetchDescription?: boolean;
   isRemote?: boolean;
+  shouldCancel?: () => boolean;
   onProgress?: (event: JobSpyProgressEvent) => void;
 }
 
@@ -263,6 +264,10 @@ export async function runJobSpy(
 
     for (const searchTerm of searchTerms) {
       for (const location of runLocations) {
+        if (options.shouldCancel?.()) {
+          return { success: true, jobs, sourceErrors };
+        }
+
         runIndex += 1;
         const locationToken = location ?? countryIndeed ?? "anywhere";
         const suffix = `${runIndex}_${slugForFilename(searchTerm)}_${slugForFilename(locationToken)}`;
@@ -338,6 +343,18 @@ export async function runJobSpy(
             },
           });
 
+          let cancelRequested = false;
+          let forceKillTimeout: NodeJS.Timeout | null = null;
+          const cancelCheck = setInterval(() => {
+            if (!options.shouldCancel?.()) return;
+            if (cancelRequested) return;
+            cancelRequested = true;
+            child.kill("SIGTERM");
+            forceKillTimeout = setTimeout(() => {
+              child.kill("SIGKILL");
+            }, 5000);
+          }, 500);
+
           const handleLine = (line: string, stream: NodeJS.WriteStream) => {
             const event = parseJobSpyProgressLine(line);
             if (event) {
@@ -363,13 +380,27 @@ export async function runJobSpy(
           stderrRl?.on("line", (line) => handleLine(line, process.stderr));
 
           child.on("close", (code) => {
+            clearInterval(cancelCheck);
+            if (forceKillTimeout) clearTimeout(forceKillTimeout);
             stdoutRl?.close();
             stderrRl?.close();
+            if (cancelRequested || options.shouldCancel?.()) {
+              resolve();
+              return;
+            }
             if (code === 0) resolve();
             else reject(new Error(`JobSpy exited with code ${code}`));
           });
-          child.on("error", reject);
+          child.on("error", (error) => {
+            clearInterval(cancelCheck);
+            if (forceKillTimeout) clearTimeout(forceKillTimeout);
+            reject(error);
+          });
         });
+
+        if (options.shouldCancel?.()) {
+          return { success: true, jobs, sourceErrors };
+        }
 
         const raw = await readFile(outputJson, "utf-8");
         const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
