@@ -37,8 +37,14 @@ export const useFilteredJobs = (
       filtered = filtered.filter(
         (job) => job.status === "discovered" || job.status === "processing",
       );
+    } else if (activeTab === "in-progress") {
+      filtered = filtered.filter((job) => job.status === "in_progress");
     } else if (activeTab === "applied") {
       filtered = filtered.filter((job) => job.status === "applied");
+    } else if (activeTab === "skipped") {
+      filtered = filtered.filter((job) => job.status === "skipped");
+    } else if (activeTab === "expired") {
+      filtered = filtered.filter((job) => job.status === "expired");
     } else if (activeTab === "all") {
       const includeClosedJobs = dateFilter.dimensions.includes("closed");
       if (!includeClosedJobs) {

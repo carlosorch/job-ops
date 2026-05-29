@@ -170,15 +170,20 @@ export const getJobCounts = (
   const byTab: Record<FilterTab, number> = {
     ready: 0,
     discovered: 0,
+    "in-progress": 0,
     applied: 0,
+    skipped: 0,
+    expired: 0,
     all: jobs.length,
   };
 
   for (const job of jobs) {
     if (job.closedAt != null) continue;
-    if (job.status === "in_progress") continue;
     if (job.status === "ready" || job.status === "processing") byTab.ready += 1;
     if (job.status === "applied") byTab.applied += 1;
+    if (job.status === "in_progress") byTab["in-progress"] += 1;
+    if (job.status === "skipped") byTab.skipped += 1;
+    if (job.status === "expired") byTab.expired += 1;
     if (job.status === "discovered" || job.status === "processing")
       byTab.discovered += 1;
   }

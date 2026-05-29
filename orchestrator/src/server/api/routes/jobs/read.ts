@@ -9,6 +9,7 @@ import {
   applyJobsPdfFreshness,
   resolvePdfFingerprintContext,
 } from "@server/services/pdf-fingerprint";
+import { getFollowUpRecommendations } from "@server/services/jobs/followUps";
 import {
   DEFAULT_JOB_EMAIL_LIMIT,
   listJobPostApplicationEmails,
@@ -130,6 +131,14 @@ jobsReadRouter.get("/", async (req: Request, res: Response) => {
     });
 
     ok(res, response);
+  } catch (error) {
+    fail(res, toJobsRouteError(error));
+  }
+});
+
+jobsReadRouter.get("/follow-ups", async (_req: Request, res: Response) => {
+  try {
+    ok(res, await getFollowUpRecommendations());
   } catch (error) {
     fail(res, toJobsRouteError(error));
   }

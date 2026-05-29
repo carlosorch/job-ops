@@ -4,6 +4,7 @@ import {
   FilePenLine,
   Home,
   Inbox,
+  MailCheck,
   LayoutDashboard,
   Link2,
   Settings,
@@ -26,7 +27,10 @@ export const NAV_LINKS: NavLink[] = [
     activePaths: [
       "/jobs/ready",
       "/jobs/discovered",
+      "/jobs/in-progress",
       "/jobs/applied",
+      "/jobs/skipped",
+      "/jobs/expired",
       "/jobs/all",
     ],
   },
@@ -43,6 +47,7 @@ export const NAV_LINKS: NavLink[] = [
     activePaths: ["/design-resume"],
   },
   { to: "/tracking-inbox", label: "Tracking Inbox", icon: Inbox },
+  { to: "/follow-ups", label: "Follow-ups", icon: MailCheck },
   {
     to: "/tracer-links",
     label: "Tracer Links",

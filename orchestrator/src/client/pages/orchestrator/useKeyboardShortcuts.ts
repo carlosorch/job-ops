@@ -123,7 +123,10 @@ export function useKeyboardShortcuts(args: UseKeyboardShortcutsArgs): void {
       // ── Tab switching ───────────────────────────────────────────────────
       [SHORTCUTS.tabReady.key]: () => setActiveTab("ready"),
       [SHORTCUTS.tabDiscovered.key]: () => setActiveTab("discovered"),
+      [SHORTCUTS.tabInProgress.key]: () => setActiveTab("in-progress"),
       [SHORTCUTS.tabApplied.key]: () => setActiveTab("applied"),
+      [SHORTCUTS.tabSkipped.key]: () => setActiveTab("skipped"),
+      [SHORTCUTS.tabExpired.key]: () => setActiveTab("expired"),
       [SHORTCUTS.tabAll.key]: () => setActiveTab("all"),
       [SHORTCUTS.prevTabArrow.key]: (e) => {
         e.preventDefault();

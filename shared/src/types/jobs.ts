@@ -171,6 +171,33 @@ export interface JobBrief {
   repeated_signals: string[];
 }
 
+export type FollowUpRecommendationKind =
+  | "application_follow_up"
+  | "interview_follow_up"
+  | "stale_in_progress";
+
+export interface FollowUpRecommendation {
+  jobId: string;
+  title: string;
+  employer: string;
+  status: Extract<JobStatus, "applied" | "in_progress">;
+  appliedAt: string | null;
+  latestStage: ApplicationStage | null;
+  latestActivityAt: number | null;
+  daysSinceActivity: number;
+  kind: FollowUpRecommendationKind;
+  priority: "high" | "medium" | "low";
+  reason: string;
+  suggestedAction: string;
+  tokenCost: "none";
+}
+
+export interface FollowUpRecommendationsResponse {
+  generatedAt: string;
+  tokenCost: "none";
+  items: FollowUpRecommendation[];
+}
+
 export interface Job {
   id: string;
 

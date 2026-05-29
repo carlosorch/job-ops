@@ -20,6 +20,7 @@ import { useAnalyticsIdentity } from "./hooks/useAnalyticsIdentity";
 import { useDemoInfo } from "./hooks/useDemoInfo";
 import { setAuthNavigator } from "./lib/auth-navigation";
 import { DesignResumePage } from "./pages/DesignResumePage";
+import { FollowUpsPage } from "./pages/FollowUpsPage";
 import { GmailOauthCallbackPage } from "./pages/GmailOauthCallbackPage";
 import { HomePage } from "./pages/HomePage";
 import { InProgressBoardPage } from "./pages/InProgressBoardPage";
@@ -46,8 +47,6 @@ const REDIRECTS: Array<{ from: string; to: string }> = [
   { from: "/applied/:jobId", to: "/jobs/applied/:jobId" },
   { from: "/in-progress", to: "/applications/in-progress" },
   { from: "/in-progress/:jobId", to: "/applications/in-progress" },
-  { from: "/jobs/in_progress", to: "/applications/in-progress" },
-  { from: "/jobs/in_progress/:jobId", to: "/applications/in-progress" },
   { from: "/all", to: "/jobs/all" },
   { from: "/all/:jobId", to: "/jobs/all/:jobId" },
 ];
@@ -196,6 +195,7 @@ export const App: React.FC = () => {
                 <Route path="/tracer-links" element={<TracerLinksPage />} />
                 <Route path="/visa-sponsors" element={<VisaSponsorsPage />} />
                 <Route path="/tracking-inbox" element={<TrackingInboxPage />} />
+                <Route path="/follow-ups" element={<FollowUpsPage />} />
                 <Route path="/watchlist" element={<WatchlistPage />} />
                 <Route path="/jobs/:tab" element={<OrchestratorPage />} />
                 <Route

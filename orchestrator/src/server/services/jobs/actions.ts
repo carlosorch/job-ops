@@ -8,7 +8,10 @@ import {
 } from "@server/services/demo-simulator";
 import { generateJobBrief } from "@server/services/job-brief";
 import { getProfile } from "@server/services/profile";
-import { scoreJobSuitability } from "@server/services/scorer";
+import {
+  getScoringPurposeForJob,
+  scoreJobSuitability,
+} from "@server/services/scorer";
 import type { JobAction, JobActionResult, JobStatus } from "@shared/types";
 
 const SKIPPABLE_STATUSES: ReadonlySet<JobStatus> = new Set([
@@ -222,8 +225,9 @@ export async function executeJobActionForJob(
           return rawProfile as Record<string, unknown>;
         })();
 
+    const purpose = getScoringPurposeForJob(job);
     const [{ score, reason }, jobBrief] = await Promise.all([
-      scoreJobSuitability(job, profile),
+      scoreJobSuitability(job, profile, purpose),
       generateJobBrief(job.jobDescription, { jobId: job.id }),
     ]);
 

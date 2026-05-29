@@ -1,6 +1,7 @@
 import type {
   ApplicationStage,
   ApplicationTask,
+  FollowUpRecommendationsResponse,
   Job,
   JobActionRequest,
   JobActionResponse,
@@ -83,6 +84,12 @@ export async function getJobsRevision(options?: {
   );
 }
 
+export async function getFollowUpRecommendations(): Promise<FollowUpRecommendationsResponse> {
+  return fetchApi<FollowUpRecommendationsResponse>(
+    withQuery("/jobs/follow-ups", { t: Date.now() }),
+  );
+}
+
 export async function getJob(id: string): Promise<Job> {
   return fetchApi<Job>(withQuery(`/jobs/${id}`, { t: Date.now() }));
 }
@@ -118,6 +125,14 @@ export async function uploadJobDocument(
   return fetchApi<JobDocument>(`/jobs/${id}/documents`, {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function generateCoverLetterDocument(
+  id: string,
+): Promise<JobDocument> {
+  return fetchApi<JobDocument>(`/jobs/${id}/documents/generate-cover-letter`, {
+    method: "POST",
   });
 }
 

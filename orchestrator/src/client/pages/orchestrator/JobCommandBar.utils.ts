@@ -106,7 +106,10 @@ export const getCommandGroup = (status: JobStatus): CommandGroupId => {
 export const getFilterTab = (status: JobStatus): FilterTab => {
   if (status === "ready") return "ready";
   if (status === "discovered" || status === "processing") return "discovered";
+  if (status === "in_progress") return "in-progress";
   if (status === "applied") return "applied";
+  if (status === "skipped") return "skipped";
+  if (status === "expired") return "expired";
   return "all";
 };
 

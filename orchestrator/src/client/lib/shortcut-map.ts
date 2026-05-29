@@ -60,15 +60,33 @@ export const SHORTCUTS = {
     label: "Discovered tab",
     group: "tabs",
   },
-  tabApplied: {
+  tabInProgress: {
     key: "3",
     displayKey: "3",
+    label: "In Progress tab",
+    group: "tabs",
+  },
+  tabApplied: {
+    key: "4",
+    displayKey: "4",
     label: "Applied tab",
     group: "tabs",
   },
+  tabSkipped: {
+    key: "5",
+    displayKey: "5",
+    label: "Skipped tab",
+    group: "tabs",
+  },
+  tabExpired: {
+    key: "6",
+    displayKey: "6",
+    label: "Expired tab",
+    group: "tabs",
+  },
   tabAll: {
-    key: "4",
-    displayKey: "4",
+    key: "7",
+    displayKey: "7",
     label: "All Jobs tab",
     group: "tabs",
   },

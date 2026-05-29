@@ -114,7 +114,10 @@ const sortFieldLabels: Record<JobSort["key"], string> = {
 const tabDescriptions: Partial<Record<FilterTab, string>> = {
   discovered: "Jobs searched, ready to be tailored",
   ready: "Jobs with tailored CVs, ready to apply",
+  "in-progress": "Applications started but not submitted",
   applied: "Jobs you've marked as applied",
+  skipped: "Jobs intentionally skipped",
+  expired: "Jobs no longer active",
 };
 
 const datePresetOptions: Array<{

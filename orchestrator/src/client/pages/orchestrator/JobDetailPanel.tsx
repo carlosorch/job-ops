@@ -267,9 +267,7 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
   const jobLink = selectedJob
     ? selectedJob.applicationLink || selectedJob.jobUrl
     : "#";
-  const selectedPdfFilename = selectedJob
-    ? `${safeFilenamePart(personName || "Unknown")}_${safeFilenamePart(selectedJob.employer || "Unknown")}.pdf`
-    : "resume.pdf";
+  const selectedPdfFilename = `${safeFilenamePart(personName || "Resume")}_CV.pdf`;
   const selectedProjectIds = useMemo(
     () => selectedJob?.selectedProjectIds?.split(",").filter(Boolean) ?? [],
     [selectedJob?.selectedProjectIds],

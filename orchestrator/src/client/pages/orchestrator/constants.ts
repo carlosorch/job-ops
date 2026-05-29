@@ -78,7 +78,14 @@ export const appliedDuplicateIndicator = {
   dot: "bg-yellow-400",
 };
 
-export type FilterTab = "ready" | "discovered" | "applied" | "all";
+export type FilterTab =
+  | "ready"
+  | "discovered"
+  | "in-progress"
+  | "applied"
+  | "skipped"
+  | "expired"
+  | "all";
 export type DateFilterPreset = "7" | "14" | "30" | "90" | "custom";
 export type DateFilterDimension = "ready" | "applied" | "closed" | "discovered";
 
@@ -153,14 +160,20 @@ export const tabs: Array<{
     label: "Discovered",
     statuses: ["discovered", "processing"],
   },
+  { id: "in-progress", label: "In Progress", statuses: ["in_progress"] },
   { id: "applied", label: "Applied", statuses: ["applied"] },
+  { id: "skipped", label: "Skipped", statuses: ["skipped"] },
+  { id: "expired", label: "Expired", statuses: ["expired"] },
   { id: "all", label: "All Jobs", statuses: [] },
 ];
 
 export const emptyStateCopy: Record<FilterTab, string> = {
   ready: "Run the pipeline to discover and process new jobs.",
   discovered: "All discovered jobs have been processed.",
+  "in-progress": "No jobs are currently in progress.",
   applied: "You have not applied to any jobs yet.",
+  skipped: "No jobs have been skipped.",
+  expired: "No jobs are marked as expired.",
   all: "No jobs in the system yet. Run the pipeline to get started.",
 };
 

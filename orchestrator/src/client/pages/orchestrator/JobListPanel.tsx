@@ -118,6 +118,12 @@ export const JobListPanel = forwardRef<VirtualListHandle, JobListPanelProps>(
 
     const virtualItems = virtualizer.getVirtualItems();
 
+    const allPageSelected =
+      activeJobs.length > 0 &&
+      activeJobs.every((job) => selectedJobIds.has(job.id));
+
+    const hasSelected = selectedJobIds.size > 0;
+
     return (
       <div className="min-w-0 rounded-xl border border-border bg-card shadow-sm">
         <div className="divide-y divide-border/40">
@@ -129,18 +135,14 @@ export const JobListPanel = forwardRef<VirtualListHandle, JobListPanelProps>(
               <Checkbox
                 id="job-list-select-all"
                 checked={
-                  activeJobs.length > 0 &&
-                  activeJobs.every((job) => selectedJobIds.has(job.id))
+                  allPageSelected || (hasSelected ? "indeterminate" : false)
                 }
-                onCheckedChange={() => {
-                  const allSelected =
-                    activeJobs.length > 0 &&
-                    activeJobs.every((job) => selectedJobIds.has(job.id));
-                  onToggleSelectAll(!allSelected);
-                }}
-                aria-label="Select all filtered jobs"
+                onCheckedChange={() => onToggleSelectAll(!hasSelected)}
+                aria-label={
+                  hasSelected ? "Deselect all filtered jobs" : "Select all filtered jobs"
+                }
               />
-              Select all filtered
+              {hasSelected ? "Deselect all" : "Select all filtered"}
             </label>
             <span className="text-xs text-muted-foreground tabular-nums">
               {selectedJobIds.size} selected

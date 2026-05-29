@@ -52,7 +52,15 @@ export const OrchestratorPage: React.FC = () => {
   } = useOrchestratorFilters();
 
   const activeTab = useMemo(() => {
-    const validTabs: FilterTab[] = ["ready", "discovered", "applied", "all"];
+    const validTabs: FilterTab[] = [
+      "ready",
+      "discovered",
+      "in-progress",
+      "applied",
+      "skipped",
+      "expired",
+      "all",
+    ];
     if (tab && validTabs.includes(tab as FilterTab)) {
       return tab as FilterTab;
     }
@@ -79,14 +87,22 @@ export const OrchestratorPage: React.FC = () => {
   // Effect to sync URL if it was invalid
   useEffect(() => {
     if (tab === "in_progress") {
-      navigate("/applications/in-progress", { replace: true });
+      navigateWithContext("in-progress", jobId ?? null, true);
       return;
     }
-    const validTabs: FilterTab[] = ["ready", "discovered", "applied", "all"];
+    const validTabs: FilterTab[] = [
+      "ready",
+      "discovered",
+      "in-progress",
+      "applied",
+      "skipped",
+      "expired",
+      "all",
+    ];
     if (tab && !validTabs.includes(tab as FilterTab)) {
       navigateWithContext("ready", null, true);
     }
-  }, [tab, navigate, navigateWithContext]);
+  }, [tab, jobId, navigateWithContext]);
 
   const [navOpen, setNavOpen] = useState(false);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
