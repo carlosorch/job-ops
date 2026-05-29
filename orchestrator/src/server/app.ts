@@ -20,6 +20,7 @@ import { logger } from "@infra/logger";
 import { runWithRequestContext } from "@infra/request-context";
 import { sanitizeUnknown } from "@infra/sanitize";
 import { verifyToken } from "@server/auth/jwt";
+import { isAuthDisabled } from "@server/config/auth";
 import { isDemoMode } from "@server/config/demo";
 import * as usersRepo from "@server/repositories/users";
 import { proxyChallengeViewerRequest } from "@server/services/challenge-viewer";
@@ -266,6 +267,19 @@ export function createAuthGuard() {
     void (async () => {
       if (!requiresAuth(req.method, req.path)) {
         next();
+        return;
+      }
+
+      if (isAuthDisabled()) {
+        runWithRequestContext(
+          {
+            userId: "local-admin",
+            tenantId: DEFAULT_TENANT_ID,
+            username: "local-admin",
+            isSystemAdmin: true,
+          },
+          () => next(),
+        );
         return;
       }
 

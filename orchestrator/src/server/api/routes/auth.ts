@@ -2,6 +2,7 @@ import { badRequest, serviceUnavailable, unauthorized } from "@infra/errors";
 import { asyncRoute, fail, ok } from "@infra/http";
 import { blacklistToken, signToken, verifyToken } from "@server/auth/jwt";
 import { verifyPassword } from "@server/auth/password";
+import { isAuthDisabled } from "@server/config/auth";
 import { isDemoMode } from "@server/config/demo";
 import { getOrCreateAnalyticsInstallState } from "@server/repositories/product-analytics";
 import * as usersRepo from "@server/repositories/users";
@@ -106,7 +107,7 @@ authRouter.post(
 authRouter.get(
   "/bootstrap-status",
   asyncRoute(async (_req: Request, res: Response) => {
-    if (isDemoMode()) {
+    if (isAuthDisabled() || isDemoMode()) {
       ok(res, { setupRequired: false });
       return;
     }
