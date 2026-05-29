@@ -218,6 +218,9 @@ describe("normalizeResumeJsonToLatexDocument", () => {
     expect(document.picture?.assetId).toBe("asset-1");
     expect(document.location).toBe("London, UK");
     expect(document.profileItems).toHaveLength(1);
+    expect(document.profileItems[0]?.url).toBe(
+      "https://linkedin.com/in/janedoe",
+    );
     expect(document.customFieldItems).toHaveLength(1);
     expect(document.customFieldItems[0]).toEqual({
       title: "Eligibility",
@@ -239,6 +242,38 @@ describe("normalizeResumeJsonToLatexDocument", () => {
     expect(document.references).toHaveLength(1);
     expect(document.sectionTitles?.profiles).toBe("Links");
     expect(document.sectionTitles?.summary).toBe("About");
+  });
+
+  it("builds canonical profile URLs when imported profile links are missing", () => {
+    const document = normalizeResumeJsonToLatexDocument({
+      basics: { name: "Jane Doe" },
+      sections: {
+        profiles: {
+          hidden: false,
+          items: [
+            {
+              id: "profile-1",
+              hidden: false,
+              network: "LinkedIn",
+              username: "janedoe",
+              website: { url: "" },
+            },
+            {
+              id: "profile-2",
+              hidden: false,
+              network: "GitHub",
+              username: "janehub",
+              website: { url: "" },
+            },
+          ],
+        },
+      },
+    });
+
+    expect(document.profileItems.map((item) => item.url)).toEqual([
+      "https://www.linkedin.com/in/janedoe",
+      "https://github.com/janehub",
+    ]);
   });
 
   it("respects hidden sections and items", () => {

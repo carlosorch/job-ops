@@ -39,6 +39,7 @@ import {
   useSkipJobMutation,
   useUpdateJobMutation,
 } from "@/client/hooks/queries/useJobMutations";
+import { useProfile } from "@/client/hooks/useProfile";
 import { useQueryErrorToast } from "@/client/hooks/useQueryErrorToast";
 import { showErrorToast } from "@/client/lib/error-toast";
 import { uploadJobPdfFromFile } from "@/client/lib/job-pdf-upload";
@@ -137,6 +138,7 @@ export const JobPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { personName } = useProfile();
   const [isLogModalOpen, setIsLogModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [isEditDetailsOpen, setIsEditDetailsOpen] = React.useState(false);
@@ -467,9 +469,7 @@ export const JobPage: React.FC = () => {
 
   const handleDownloadPdf = async () => {
     if (!job || !job.pdfPath || pdfActionsDisabled) return;
-    const filename = `${safeFilenamePart(job.employer)}-${safeFilenamePart(
-      job.title,
-    )}-resume.pdf`;
+    const filename = `${safeFilenamePart(personName || "Resume")}_CV.pdf`;
     await downloadJobPdf(job.id, filename).catch((error) => {
       showErrorToast(error, "Could not download PDF");
     });

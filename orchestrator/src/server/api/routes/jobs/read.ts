@@ -4,6 +4,7 @@ import { logger } from "@infra/logger";
 import * as jobsRepo from "@server/repositories/jobs";
 import { attachAppliedDuplicateMatches } from "@server/services/applied-duplicate-matching";
 import { getPdfPath, pdfExists } from "@server/services/pdf";
+import { getProfile } from "@server/services/profile";
 import {
   applyJobsPdfFreshness,
   resolvePdfFingerprintContext,
@@ -230,6 +231,15 @@ jobsReadRouter.get("/:id/emails", async (req: Request, res: Response) => {
   }
 });
 
+function neutralResumePdfFileName(candidateName: string | null | undefined): string {
+  const base = (candidateName || "Resume")
+    .trim()
+    .replace(/\.pdf$/i, "")
+    .replace(/[^a-z0-9._-]+/gi, "_")
+    .replace(/^_+|_+$/g, "");
+  return `${base || "Resume"}_CV.pdf`;
+}
+
 jobsReadRouter.get("/:id/pdf", async (req: Request, res: Response) => {
   const currentJob = await jobsRepo.getJobById(req.params.id);
   if (!currentJob || !(await pdfExists(req.params.id))) {
@@ -238,7 +248,13 @@ jobsReadRouter.get("/:id/pdf", async (req: Request, res: Response) => {
   }
 
   const pdfPath = getPdfPath(req.params.id);
+  const profile = await getProfile().catch(() => null);
+  const fileName = neutralResumePdfFileName(profile?.basics?.name);
   res.setHeader("Cache-Control", "no-store");
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+  );
   res.sendFile(pdfPath, (error) => {
     if (error) {
       fail(res, notFound("PDF not found"));

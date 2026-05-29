@@ -1,0 +1,7 @@
+{
+  "id": "rendercv",
+  "label": "RenderCV",
+  "description": "A RenderCV-inspired Typst theme with compact spacing and icon-style header connections.",
+  "kind": "adapted",
+  "entrypoint": "main.typ"
+}

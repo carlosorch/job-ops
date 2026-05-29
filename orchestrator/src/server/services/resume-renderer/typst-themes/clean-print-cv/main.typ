@@ -1,6 +1,11 @@
 #import "@preview/clean-print-cv:0.1.0": *
 
 #let source = json(__RESUME_DATA_PATH__)
+#let resume-name = if source.at("name", default: "") == none { "" } else { source.at("name", default: "") }
+#set document(
+  title: if resume-name == "" { "Resume" } else { resume-name + " CV" },
+  author: resume-name,
+)
 
 #let with-default(value, fallback) = {
   if value == none {

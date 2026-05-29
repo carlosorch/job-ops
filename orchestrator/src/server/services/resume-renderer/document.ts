@@ -306,14 +306,20 @@ function buildContactItems(resumeJson: RecordLike): LatexResumeContactItem[] {
 
 function buildProfileItems(resumeJson: RecordLike): LatexResumeProfileItem[] {
   return getVisibleSectionItems(resumeJson, "profiles").map((item) => {
-    const url = toText(getByPath(item, "website.url")).trim();
+    let url = toText(getByPath(item, "website.url")).trim();
+    const network = toText(item.network).trim();
+    const username = toText(item.username).trim();
+    if (!url && username) {
+      const normalizedNetwork = network.toLowerCase();
+      if (normalizedNetwork.includes("linkedin")) {
+        url = `https://www.linkedin.com/in/${username}`;
+      } else if (normalizedNetwork.includes("github")) {
+        url = `https://github.com/${username}`;
+      }
+    }
     return {
-      network:
-        toText(item.network).trim() ||
-        toText(item.username).trim() ||
-        url ||
-        "Profile",
-      username: toText(item.username).trim() || null,
+      network: network || username || url || "Profile",
+      username: username || null,
       url: url || null,
     };
   });

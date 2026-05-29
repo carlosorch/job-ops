@@ -41,7 +41,8 @@ const TAILORING_SCHEMA: JsonSchemaDefinition = {
     properties: {
       headline: {
         type: "string",
-        description: "Job title headline matching the JD exactly",
+        description:
+          "Clean role headline matching the JD job title, without the target company/employer name",
       },
       summary: {
         type: "string",

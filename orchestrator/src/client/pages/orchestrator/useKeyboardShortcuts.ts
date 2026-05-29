@@ -238,7 +238,7 @@ export function useKeyboardShortcuts(args: UseKeyboardShortcutsArgs): void {
         if (activeTab !== "ready") return;
         void downloadJobPdf(
           selectedJob.id,
-          `${safeFilenamePart(personName || "Unknown")}_${safeFilenamePart(selectedJob.employer)}.pdf`,
+          `${safeFilenamePart(personName || "Resume")}_CV.pdf`,
         ).catch((error) => {
           showErrorToast(error, "Could not download PDF");
         });

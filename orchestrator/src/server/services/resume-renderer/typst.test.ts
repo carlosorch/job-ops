@@ -248,6 +248,37 @@ describe("typst resume renderer", () => {
     expect(template).toContain('link(text-of-item(entry, "url"))');
   });
 
+  it("loads the RenderCV adapter with icon-style header connections", async () => {
+    const template = await readTypstTemplate("rendercv");
+
+    expect(template).toContain("@preview/rendercv:0.3.0");
+    expect(template).toContain("#set document(");
+    expect(template).toContain(
+      'title: if resume-name == "" { "Resume" } else { resume-name + " CV" }',
+    );
+    expect(template).toContain("#show: rendercv.with(");
+    expect(template).toContain("header-connections-show-icons: true");
+    expect(template).toContain("connection-with-icon(connection-icon)");
+    expect(template).toContain(
+      'profile-label-matching(is-linkedin-profile, "linkedin")',
+    );
+    expect(template).toContain(
+      'profile-label-matching(is-github-profile, "github")',
+    );
+  });
+
+  it("renders every Resume Studio section in the RenderCV adapter", async () => {
+    const template = await readTypstTemplate("rendercv");
+
+    expect(template).toContain('source.at("customFieldItems"');
+    expect(template).toContain('section-titles.at("interests"');
+    expect(template).toContain('section-titles.at("awards"');
+    expect(template).toContain('section-titles.at("certifications"');
+    expect(template).toContain('section-titles.at("publications"');
+    expect(template).toContain('section-titles.at("volunteer"');
+    expect(template).toContain('section-titles.at("references"');
+  });
+
   it("renders award-style sections as Typst bullet lists in clean-print-cv", async () => {
     const template = await readTypstTemplate("clean-print-cv");
 

@@ -79,6 +79,28 @@ function resolveThemesRoot(): string {
 
 const THEMES_ROOT = resolveThemesRoot();
 
+function resolveFontsRoot(): string {
+  try {
+    if (import.meta.url.startsWith("file:")) {
+      const modulePath = fileURLToPath(import.meta.url);
+      const moduleRelativePath = join(modulePath, "..", "fonts");
+      if (existsSync(moduleRelativePath)) {
+        return moduleRelativePath;
+      }
+    }
+  } catch {
+    // Fall through to cwd-based resolution below.
+  }
+
+  const cwd = process.cwd();
+  if (cwd.endsWith("/orchestrator")) {
+    return join(cwd, "src/server/services/resume-renderer/fonts");
+  }
+  return join(cwd, "orchestrator/src/server/services/resume-renderer/fonts");
+}
+
+const FONTS_ROOT = resolveFontsRoot();
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -576,8 +598,13 @@ export function buildTypstDocument(
   ]
     .filter(Boolean)
     .join("\n\n");
+  const documentTitle = document.name ? `${document.name} CV` : "Resume";
 
   return replaceSharedTypstPlaceholders(template)
+    .replace(
+      "#set page(paper: \"a4\", margin: __PAGE_MARGIN__)",
+      `#set document(title: ${JSON.stringify(documentTitle)}, author: ${JSON.stringify(document.name)})\n#set page(paper: \"a4\", margin: __PAGE_MARGIN__)`,
+    )
     .replace("__PAGE_MARGIN__", tokens.pageMargin)
     .replace("__BODY_SIZE__", tokens.bodySize)
     .replace("__PAR_LEADING__", tokens.parLeading)
@@ -610,7 +637,13 @@ async function runTypst(args: {
   const binary = process.env.TYPST_BIN?.trim() || "typst";
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(binary, ["compile", args.typPath, args.outputPath], {
+    const compileArgs = ["compile"];
+    if (existsSync(FONTS_ROOT)) {
+      compileArgs.push("--font-path", FONTS_ROOT);
+    }
+    compileArgs.push(args.typPath, args.outputPath);
+
+    const child = spawn(binary, compileArgs, {
       cwd: args.cwd,
       stdio: ["ignore", "pipe", "pipe"],
     });
