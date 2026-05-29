@@ -214,6 +214,7 @@ export const JobDocumentsPanel: React.FC<JobDocumentsPanelProps> = ({
   const queryClient = useQueryClient();
   const uploadDocumentInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<JobDocument | null>(
     null,
   );
@@ -251,6 +252,19 @@ export const JobDocumentsPanel: React.FC<JobDocumentsPanelProps> = ({
     }
   };
 
+  const handleGenerateCoverLetter = async () => {
+    try {
+      setIsGeneratingCoverLetter(true);
+      await api.generateCoverLetterDocument(job.id);
+      await refreshDocuments();
+      toast.success("Cover letter generated");
+    } catch (error) {
+      showErrorToast(error, "Failed to generate cover letter");
+    } finally {
+      setIsGeneratingCoverLetter(false);
+    }
+  };
+
   const handleDeleteDocument = async () => {
     if (!documentToDelete) return;
     try {
@@ -273,6 +287,19 @@ export const JobDocumentsPanel: React.FC<JobDocumentsPanelProps> = ({
             Documents
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleGenerateCoverLetter}
+              disabled={isGeneratingCoverLetter}
+            >
+              {isGeneratingCoverLetter ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileText className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Generate cover letter
+            </Button>
             <Button
               size="sm"
               variant="outline"

@@ -54,7 +54,8 @@ INSTRUCTIONS:
 
 1. "headline" (String):
    - CRITICAL: This is the #1 ATS factor.
-   - It must match the Job Title from the JD exactly (e.g., if JD says "Senior React Dev", use "Senior React Dev").
+   - Use a clean role headline matching the JD's job title (e.g., if JD says "Senior React Dev", use "Senior React Dev").
+   - Do NOT include the target company/employer name, application-specific wording, or phrases like "for [Company]".
    - Do NOT translate, localize, or paraphrase the headline, even if the rest of the output is in {{outputLanguage}}.
 
 2. "summary" (String):
@@ -79,7 +80,7 @@ WRITING STYLE PREFERENCES:
 {{avoidTermsBullet}}
 
 ATS SAFETY:
-- Keep "headline" in the exact original job-title wording from the JD.
+- Keep "headline" as the exact original role/job-title wording from the JD, but omit any company/employer name.
 - Do not translate the headline, even when summary and skills are written in {{outputLanguage}}.
 
 OUTPUT FORMAT (JSON):

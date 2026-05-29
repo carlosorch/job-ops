@@ -12,6 +12,7 @@ import {
   simulateGeneratePdf,
   simulateSummarizeJob,
 } from "@server/services/demo-simulator";
+import { generateCoverLetterDocument } from "@server/services/cover-letter";
 import {
   removeStoredJobDocument,
   storeJobDocument,
@@ -239,6 +240,22 @@ jobsDocumentsRouter.get(
         },
       );
       fail(res, err);
+    }
+  },
+);
+
+jobsDocumentsRouter.post(
+  "/:id/documents/generate-cover-letter",
+  async (req: Request, res: Response) => {
+    try {
+      await requireJob(req.params.id);
+      const result = await generateCoverLetterDocument(req.params.id);
+      if (!result.success) {
+        return fail(res, badRequest(result.error));
+      }
+      ok(res, result.document, 201);
+    } catch (error) {
+      fail(res, toJobsRouteError(error));
     }
   },
 );
