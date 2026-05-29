@@ -1488,6 +1488,39 @@ describe.sequential("Jobs API routes", () => {
     expect(vi.mocked(getProfile)).toHaveBeenCalledTimes(1);
   });
 
+  it("routes single-job rescore through high-tier scoring for AI roles", async () => {
+    const { createJob } = await import("@server/repositories/jobs");
+    const { scoreJobSuitability } = await import("@server/services/scorer");
+    const { getProfile } = await import("@server/services/profile");
+
+    vi.mocked(getProfile).mockResolvedValue({ target: "AI/ML engineering" });
+    vi.mocked(scoreJobSuitability).mockResolvedValue({
+      score: 91,
+      reason: "High-tier fit from action rescore",
+    });
+
+    const job = await createJob({
+      source: "manual",
+      title: "AI Engineer",
+      employer: "Acme AI",
+      jobUrl: "https://example.com/job/action-rescore-ai",
+      jobDescription: "Build AI systems",
+    });
+
+    const res = await fetch(`${baseUrl}/api/jobs/${job.id}/rescore`, {
+      method: "POST",
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(scoreJobSuitability).toHaveBeenCalledWith(
+      expect.objectContaining({ id: job.id, title: "AI Engineer" }),
+      { target: "AI/ML engineering" },
+      "scoring",
+    );
+  });
+
   it("streams job action progress with done counters", async () => {
     const { createJob, updateJob } = await import("@server/repositories/jobs");
     const discovered = await createJob({

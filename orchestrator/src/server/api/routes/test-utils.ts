@@ -66,6 +66,13 @@ vi.mock("@server/services/manualJob", () => ({
 }));
 
 vi.mock("@server/services/scorer", () => ({
+  getScoringPurposeForJob: vi.fn((job: { title: string }) =>
+    /mobile dev|ios|android dev|\bc developer\b|c\+\+ dev|c\+\+ developer|\bc software engineer\b|\bc\b.*programmer/i.test(
+      job.title,
+    )
+      ? "scoring"
+      : "scoring",
+  ),
   scoreJobSuitability: vi.fn(),
 }));
 

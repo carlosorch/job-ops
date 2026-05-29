@@ -17,6 +17,7 @@ vi.mock("../services/visa-sponsors/index", () => ({
 
 // Mock the scorer module
 vi.mock("../services/scorer", () => ({
+  getScoringPurposeForJob: vi.fn(() => "scoring"),
   scoreJobSuitability: vi.fn(),
 }));
 

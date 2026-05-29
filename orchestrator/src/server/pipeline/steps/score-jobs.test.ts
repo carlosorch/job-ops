@@ -20,6 +20,9 @@ vi.mock("@server/repositories/settings", () => ({
 }));
 
 vi.mock("@server/services/scorer", () => ({
+  getScoringPurposeForJob: vi.fn((job: { title: string }) =>
+    /ios|c\+\+ developer/i.test(job.title) ? "scoringLowTier" : "scoring",
+  ),
   scoreJobSuitability: vi.fn(),
 }));
 
@@ -239,6 +242,55 @@ describe("scoreJobsStep auto-skip behavior", () => {
     expect(vi.mocked(jobsRepo.updateJob)).toHaveBeenCalledTimes(2);
     expect(vi.mocked(progressHelpers.scoringJob)).toHaveBeenCalledTimes(2);
     expect(vi.mocked(progressHelpers.scoringComplete)).toHaveBeenCalledWith(2);
+  });
+
+  it("routes high-tier jobs to Codex scoring and low-tier jobs to cheap scoring", async () => {
+    const jobsRepo = await import("@server/repositories/jobs");
+    const scorer = await import("@server/services/scorer");
+
+    vi.mocked(jobsRepo.getUnscoredDiscoveredJobs).mockResolvedValue([
+      createJob({
+        id: "job-ai",
+        title: "AI Engineer",
+        employer: "Acme AI",
+        suitabilityScore: null,
+      }),
+      createJob({
+        id: "job-ios",
+        title: "iOS Developer",
+        employer: "Mobile Co",
+        suitabilityScore: null,
+      }),
+      createJob({
+        id: "job-cpp",
+        title: "C++ Developer",
+        employer: "Systems Co",
+        suitabilityScore: null,
+      }),
+    ]);
+
+    vi.mocked(scorer.scoreJobSuitability)
+      .mockResolvedValueOnce({ score: 91, reason: "High-tier fit" })
+      .mockResolvedValueOnce({ score: 44, reason: "Low-tier mobile" })
+      .mockResolvedValueOnce({ score: 38, reason: "Low-tier C++" });
+
+    await scoreJobsStep({ profile: { target: "AI/ML engineering" } });
+
+    expect(vi.mocked(scorer.scoreJobSuitability)).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "job-ai", title: "AI Engineer" }),
+      { target: "AI/ML engineering" },
+      "scoring",
+    );
+    expect(vi.mocked(scorer.scoreJobSuitability)).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "job-ios", title: "iOS Developer" }),
+      { target: "AI/ML engineering" },
+      "scoringLowTier",
+    );
+    expect(vi.mocked(scorer.scoreJobSuitability)).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "job-cpp", title: "C++ Developer" }),
+      { target: "AI/ML engineering" },
+      "scoringLowTier",
+    );
   });
 
   it("stops before processing when cancellation is requested", async () => {
