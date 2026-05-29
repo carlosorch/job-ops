@@ -16,6 +16,17 @@ const DEFAULT_TURN_TIMEOUT_MS = 120_000;
 const DEFAULT_IDLE_TIMEOUT_MS = 30_000;
 const MAX_STDERR_LINES = 40;
 const FALLBACK_CLIENT_VERSION = "dev";
+const DEFAULT_CODEX_REASONING_EFFORT = "low";
+const CODEX_REASONING_EFFORT_VALUES = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+type CodexReasoningEffort = (typeof CODEX_REASONING_EFFORT_VALUES)[number];
 
 type JsonRpcId = number | string;
 
@@ -80,6 +91,17 @@ function getPositiveIntEnv(name: string, fallback: number): number {
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return parsed;
+}
+
+function getCodexReasoningEffort(): CodexReasoningEffort {
+  const raw = process.env.CODEX_REASONING_EFFORT?.trim().toLowerCase();
+  if (
+    raw &&
+    CODEX_REASONING_EFFORT_VALUES.includes(raw as CodexReasoningEffort)
+  ) {
+    return raw as CodexReasoningEffort;
+  }
+  return DEFAULT_CODEX_REASONING_EFFORT;
 }
 
 function buildCodexErrorMessage(error: unknown): string {
@@ -205,6 +227,48 @@ function formatPrompt(args: {
     "Conversation:",
     transcript,
   ].join("\n\n");
+}
+
+function isStrictObjectSchemaForCodex(schema: unknown): boolean {
+  if (!schema || typeof schema !== "object") {
+    return true;
+  }
+
+  const record = schema as Record<string, unknown>;
+  if (record.type === "object" && record.additionalProperties !== false) {
+    return false;
+  }
+
+  const properties = record.properties;
+  if (
+    properties &&
+    typeof properties === "object" &&
+    !Array.isArray(properties)
+  ) {
+    for (const value of Object.values(properties)) {
+      if (!isStrictObjectSchemaForCodex(value)) {
+        return false;
+      }
+    }
+  }
+
+  const items = record.items;
+  if (items && !isStrictObjectSchemaForCodex(items)) {
+    return false;
+  }
+
+  for (const key of ["anyOf", "oneOf", "allOf"] as const) {
+    const variants = record[key];
+    if (Array.isArray(variants)) {
+      for (const variant of variants) {
+        if (!isStrictObjectSchemaForCodex(variant)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
 }
 
 function extractAgentMessageText(
@@ -856,31 +920,32 @@ export class CodexClient {
           throw new Error("Codex thread/start did not return a thread id.");
         }
 
-        const turnStart = (await session.request(
-          "turn/start",
-          {
-            threadId,
-            model: options.model.trim() || null,
-            input: [
-              {
-                type: "text",
-                text: formatPrompt({
-                  messages: options.messages,
-                  jsonSchema: options.jsonSchema,
-                }),
-                text_elements: [],
-              },
-            ],
-            outputSchema: options.jsonSchema.schema,
-          },
-          {
-            signal: options.signal,
-            timeoutMs: getPositiveIntEnv(
-              "CODEX_APP_SERVER_REQUEST_TIMEOUT_MS",
-              DEFAULT_REQUEST_TIMEOUT_MS,
-            ),
-          },
-        )) as {
+        const turnParams: Record<string, unknown> = {
+          threadId,
+          model: options.model.trim() || null,
+          effort: getCodexReasoningEffort(),
+          input: [
+            {
+              type: "text",
+              text: formatPrompt({
+                messages: options.messages,
+                jsonSchema: options.jsonSchema,
+              }),
+              text_elements: [],
+            },
+          ],
+        };
+        if (isStrictObjectSchemaForCodex(options.jsonSchema.schema)) {
+          turnParams.outputSchema = options.jsonSchema.schema;
+        }
+
+        const turnStart = (await session.request("turn/start", turnParams, {
+          signal: options.signal,
+          timeoutMs: getPositiveIntEnv(
+            "CODEX_APP_SERVER_REQUEST_TIMEOUT_MS",
+            DEFAULT_REQUEST_TIMEOUT_MS,
+          ),
+        })) as {
           turn?: { id?: string };
         };
 

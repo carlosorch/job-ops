@@ -10,6 +10,7 @@ import { __resetCodexSharedSessionForTests, CodexClient } from "./client";
 const { spawnMock } = vi.hoisted(() => ({
   spawnMock: vi.fn(),
 }));
+const originalCodexReasoningEffort = process.env.CODEX_REASONING_EFFORT;
 
 vi.mock("node:child_process", () => ({
   spawn: spawnMock,
@@ -94,11 +95,17 @@ function mockSpawn(
 describe("CodexClient", () => {
   afterEach(async () => {
     await __resetCodexSharedSessionForTests();
+    if (originalCodexReasoningEffort === undefined) {
+      delete process.env.CODEX_REASONING_EFFORT;
+    } else {
+      process.env.CODEX_REASONING_EFFORT = originalCodexReasoningEffort;
+    }
     vi.restoreAllMocks();
   });
 
   it("creates an ephemeral thread, waits for completion, and returns assistant text", async () => {
     let threadReadCalls = 0;
+    let turnStartParams: Record<string, unknown> | null = null;
 
     mockSpawn((request, helpers) => {
       if (request.method === "initialize") {
@@ -117,6 +124,7 @@ describe("CodexClient", () => {
         return;
       }
       if (request.method === "turn/start") {
+        turnStartParams = request.params as Record<string, unknown>;
         helpers.respond({
           turn: { id: "turn-1" },
         });
@@ -174,6 +182,76 @@ describe("CodexClient", () => {
     expect(response.text).toContain('"score":99');
     expect(response.turnId).toBe("turn-1");
     expect(threadReadCalls).toBe(0);
+    expect(turnStartParams).toMatchObject({ effort: "low" });
+  });
+
+  it("allows codex reasoning effort to be configured by environment", async () => {
+    process.env.CODEX_REASONING_EFFORT = "medium";
+    let turnStartParams: Record<string, unknown> | null = null;
+
+    mockSpawn((request, helpers) => {
+      if (request.method === "initialize") {
+        helpers.respond({
+          userAgent: "test",
+          codexHome: "/tmp/codex",
+          platformFamily: "unix",
+          platformOs: "linux",
+        });
+        return;
+      }
+      if (request.method === "thread/start") {
+        helpers.respond({ thread: { id: "thread-1" } });
+        return;
+      }
+      if (request.method === "turn/start") {
+        turnStartParams = request.params as Record<string, unknown>;
+        helpers.respond({ turn: { id: "turn-1" } });
+        helpers.notify("item/completed", {
+          threadId: "thread-1",
+          turnId: "turn-1",
+          item: {
+            type: "agentMessage",
+            id: "msg-1",
+            phase: "final_answer",
+            text: '{"score":99,"reason":"Strong fit"}',
+          },
+        });
+        helpers.notify("turn/completed", {
+          threadId: "thread-1",
+          turn: {
+            id: "turn-1",
+            status: "completed",
+            error: null,
+            items: [],
+            startedAt: null,
+            completedAt: null,
+            durationMs: null,
+          },
+        });
+        return;
+      }
+      helpers.respond({});
+    });
+
+    const client = new CodexClient();
+    await client.callJson({
+      model: "gpt-5.5",
+      messages: [{ role: "user", content: "Score this job." }],
+      jsonSchema: {
+        name: "score_result",
+        schema: {
+          type: "object",
+          properties: {
+            score: { type: "number" },
+            reason: { type: "string" },
+          },
+          required: ["score", "reason"],
+          additionalProperties: false,
+        },
+      },
+    } as LlmRequestOptions<unknown>);
+
+    expect(turnStartParams).toMatchObject({ effort: "medium" });
   });
 
   it("reports missing auth as an invalid credential state", async () => {
