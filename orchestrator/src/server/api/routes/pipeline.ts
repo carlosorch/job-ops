@@ -215,6 +215,10 @@ pipelineRouter.get(
 const runPipelineSchema = z.object({
   topN: z.number().min(1).max(50).optional(),
   minSuitabilityScore: z.number().min(0).max(100).optional(),
+  enableCrawling: z.boolean().optional(),
+  enableScoring: z.boolean().optional(),
+  enableImporting: z.boolean().optional(),
+  enableAutoTailoring: z.boolean().optional(),
   sources: z
     .array(
       z.enum(
@@ -308,6 +312,10 @@ pipelineRouter.post("/run", async (req: Request, res: Response) => {
       const simulated = await simulatePipelineRun({
         topN: config.topN,
         minSuitabilityScore: config.minSuitabilityScore,
+        enableCrawling: config.enableCrawling,
+        enableScoring: config.enableScoring,
+        enableImporting: config.enableImporting,
+        enableAutoTailoring: config.enableAutoTailoring,
         sources: config.sources,
         locationIntent,
       });
@@ -319,6 +327,10 @@ pipelineRouter.post("/run", async (req: Request, res: Response) => {
       runPipeline({
         topN: config.topN,
         minSuitabilityScore: config.minSuitabilityScore,
+        enableCrawling: config.enableCrawling,
+        enableScoring: config.enableScoring,
+        enableImporting: config.enableImporting,
+        enableAutoTailoring: config.enableAutoTailoring,
         sources: config.sources,
         locationIntent,
       }).catch((error) => {

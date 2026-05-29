@@ -67,6 +67,10 @@ export async function getPipelineRunInsights(
 export async function runPipeline(config?: {
   topN?: number;
   minSuitabilityScore?: number;
+  enableCrawling?: boolean;
+  enableScoring?: boolean;
+  enableImporting?: boolean;
+  enableAutoTailoring?: boolean;
   sources?: JobSource[];
   runBudget?: number;
   searchTerms?: string[];

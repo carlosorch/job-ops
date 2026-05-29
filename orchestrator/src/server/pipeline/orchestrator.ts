@@ -284,20 +284,31 @@ export async function runPipeline(
       await persistResultSummary({ stage: "profile_loaded" });
 
       ensureNotCancelled(tenantId);
-      await persistResultSummary({ stage: "discovery" });
-      let { discoveredJobs, sourceErrors, pendingChallenges } =
-        await discoverJobsStep({
-          mergedConfig,
-          shouldCancel: () =>
-            getPipelineState(tenantId).cancelRequestedAt !== null,
+      let discoveredJobs: import("@shared/types").CreateJobInput[] = [];
+      let sourceErrors: string[] = [];
+      let pendingChallenges: PendingChallenge[] = [];
+      if (mergedConfig.enableCrawling !== false) {
+        await persistResultSummary({ stage: "discovery" });
+        ({ discoveredJobs, sourceErrors, pendingChallenges } =
+          await discoverJobsStep({
+            mergedConfig,
+            shouldCancel: () =>
+              getPipelineState(tenantId).cancelRequestedAt !== null,
+          }));
+        await persistResultSummary({
+          stage: "discovery",
+          sourceErrors,
         });
-      await persistResultSummary({
-        stage: "discovery",
-        sourceErrors,
-      });
+      } else {
+        pipelineLogger.info("Skipping discovery because crawling is disabled");
+        progressHelpers.crawlingComplete(0);
+      }
 
       // ---------- Challenge pause/resume ----------
-      if (pendingChallenges.length > 0) {
+      if (
+        mergedConfig.enableCrawling !== false &&
+        pendingChallenges.length > 0
+      ) {
         pipelineLogger.info("Challenges detected, pausing pipeline", {
           challenges: pendingChallenges.map((c) => ({
             extractorId: c.extractorId,
@@ -361,7 +372,10 @@ export async function runPipeline(
       }
 
       ensureNotCancelled(tenantId);
-      const { created } = await importJobsStep({ discoveredJobs });
+      const { created } =
+        mergedConfig.enableImporting === false
+          ? { created: 0 }
+          : await importJobsStep({ discoveredJobs });
       jobsDiscovered = created;
 
       await persistResultSummary({ stage: "import" });
@@ -374,35 +388,40 @@ export async function runPipeline(
 
       ensureNotCancelled(tenantId);
       await persistResultSummary({ stage: "scoring" });
-      try {
-        ({ unprocessedJobs, scoredJobs } = await scoreJobsStep({
-          profile,
-          shouldCancel: () =>
-            getPipelineState(tenantId).cancelRequestedAt !== null,
-        }));
-      } catch (error) {
-        if (error instanceof LlmNotConfiguredError) {
-          const message = error.message;
-          progressHelpers.configurationRequired(message);
-          pipelineLogger.warn("Pipeline paused — LLM not configured", error);
-
-          await new Promise<void>((resolve) => {
-            tenantState.activeLlmConfigState = { resolve };
-          });
-          tenantState.activeLlmConfigState = null;
-
-          ensureNotCancelled(tenantId);
-
-          pipelineLogger.info("LLM configured, resuming scoring");
-
+      if (mergedConfig.enableScoring !== false) {
+        try {
           ({ unprocessedJobs, scoredJobs } = await scoreJobsStep({
             profile,
             shouldCancel: () =>
               getPipelineState(tenantId).cancelRequestedAt !== null,
           }));
-        } else {
-          throw error;
+        } catch (error) {
+          if (error instanceof LlmNotConfiguredError) {
+            const message = error.message;
+            progressHelpers.configurationRequired(message);
+            pipelineLogger.warn("Pipeline paused — LLM not configured", error);
+
+            await new Promise<void>((resolve) => {
+              tenantState.activeLlmConfigState = { resolve };
+            });
+            tenantState.activeLlmConfigState = null;
+
+            ensureNotCancelled(tenantId);
+
+            pipelineLogger.info("LLM configured, resuming scoring");
+
+            ({ unprocessedJobs, scoredJobs } = await scoreJobsStep({
+              profile,
+              shouldCancel: () =>
+                getPipelineState(tenantId).cancelRequestedAt !== null,
+            }));
+          } else {
+            throw error;
+          }
         }
+      } else {
+        pipelineLogger.info("Skipping scoring because scoring is disabled");
+        progressHelpers.scoringComplete(0);
       }
       await persistResultSummary({
         stage: "scoring",
@@ -430,12 +449,15 @@ export async function runPipeline(
         jobsScored: scoredJobs.length,
         jobsSelected: jobsToProcess.length,
       });
-      const { processedCount } = await processJobsStep({
-        jobsToProcess,
-        processJob,
-        shouldCancel: () =>
-          getPipelineState(tenantId).cancelRequestedAt !== null,
-      });
+      const { processedCount } =
+        mergedConfig.enableAutoTailoring === false
+          ? { processedCount: 0 }
+          : await processJobsStep({
+              jobsToProcess,
+              processJob,
+              shouldCancel: () =>
+                getPipelineState(tenantId).cancelRequestedAt !== null,
+            });
       jobsProcessed = processedCount;
 
       resultSummary = updatePipelineRunResultSummary(resultSummary, {
