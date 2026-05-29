@@ -78,6 +78,17 @@ export const OnboardingPage: React.FC = () => {
                     })
                   ) {
                     navigate("/jobs/ready", { replace: true });
+                    return;
+                  }
+
+                  if (savedSettings && flow.currentStep) {
+                    const currentIndex = flow.steps.findIndex(
+                      (step) => step.id === flow.currentStep,
+                    );
+                    const nextStep = flow.steps[currentIndex + 1];
+                    if (nextStep) {
+                      flow.setCurrentStep(nextStep.id);
+                    }
                   }
                 }}
               >
