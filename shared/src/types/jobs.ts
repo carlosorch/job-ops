@@ -198,6 +198,20 @@ export interface FollowUpRecommendationsResponse {
   items: FollowUpRecommendation[];
 }
 
+export type JobLivenessStatus = "live" | "expired" | "unknown";
+
+export interface JobLivenessCheckResponse {
+  jobId: string;
+  checkedUrl: string | null;
+  status: JobLivenessStatus;
+  httpStatus: number | null;
+  reason: string;
+  signals: string[];
+  checkedAt: string;
+  tokenCost: "none";
+  job?: Job;
+}
+
 export interface Job {
   id: string;
 

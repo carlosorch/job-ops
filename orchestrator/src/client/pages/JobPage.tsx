@@ -445,6 +445,21 @@ export const JobPage: React.FC = () => {
     });
   };
 
+  const handleCheckLiveness = async () => {
+    await runAction("check-liveness", async () => {
+      if (!job) return;
+      const result = await api.checkJobLiveness(job.id);
+      const description = `${result.reason} Token cost: ${result.tokenCost}.`;
+      if (result.status === "expired") {
+        toast.warning("Job appears expired", { description });
+      } else if (result.status === "live") {
+        toast.success("Job appears live", { description });
+      } else {
+        toast.message("Liveness unclear", { description });
+      }
+    });
+  };
+
   const handleCopyJobInfo = async () => {
     if (!job) return;
     try {
@@ -935,6 +950,7 @@ export const JobPage: React.FC = () => {
               onCopyJobInfo={() => void handleCopyJobInfo()}
               onRescore={() => void handleRescore()}
               onCheckSponsor={() => void handleCheckSponsor()}
+              onCheckLiveness={() => void handleCheckLiveness()}
               onRevertToReady={() => void handleRevertToReady()}
               onRevertToDiscovered={() => void handleRevertToDiscovered()}
             />

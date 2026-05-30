@@ -69,6 +69,7 @@ function renderRightSidebar(overrides: Parameters<typeof createJob>[0] = {}) {
       onCopyJobInfo={noop}
       onRescore={noop}
       onCheckSponsor={noop}
+      onCheckLiveness={noop}
     />,
   );
 }

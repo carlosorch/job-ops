@@ -5,6 +5,7 @@ import { resolveRequestOrigin } from "@server/infra/request-origin";
 import * as jobsRepo from "@server/repositories/jobs";
 import { reconcileActivationMilestonesFromHistorySafely } from "@server/services/activation-funnel";
 import { trackApplicationAcceptedIfNeeded } from "@server/services/jobs/analytics";
+import { checkJobLiveness } from "@server/services/jobs/liveness";
 import { getTracerReadiness } from "@server/services/tracer-links";
 import { type Request, type Response, Router } from "express";
 import {
@@ -16,6 +17,32 @@ import {
 } from "./shared";
 
 export const jobsMutationsRouter = Router();
+
+jobsMutationsRouter.post("/:id/liveness", async (req: Request, res: Response) => {
+  try {
+    const currentJob = await jobsRepo.getJobById(req.params.id);
+
+    if (!currentJob) {
+      return fail(
+        res,
+        new AppError({
+          status: 404,
+          code: "NOT_FOUND",
+          message: "Job not found",
+        }),
+      );
+    }
+
+    const result = await checkJobLiveness(currentJob, {
+      markExpired: true,
+      updateJob: jobsRepo.updateJob,
+    });
+
+    ok(res, result.job ? { ...result, job: await hydrateJobPdfFreshness(result.job) } : result);
+  } catch (error) {
+    fail(res, toJobsRouteError(error));
+  }
+});
 
 jobsMutationsRouter.patch("/:id", async (req: Request, res: Response) => {
   try {

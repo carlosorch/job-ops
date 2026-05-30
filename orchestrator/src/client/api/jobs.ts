@@ -8,6 +8,7 @@ import type {
   JobActionStreamEvent,
   JobDocument,
   JobListItem,
+  JobLivenessCheckResponse,
   JobNote,
   JobOutcome,
   JobsListResponse,
@@ -101,6 +102,14 @@ export async function updateJob(
   return fetchApi<Job>(`/jobs/${id}`, {
     method: "PATCH",
     body: JSON.stringify(update),
+  });
+}
+
+export async function checkJobLiveness(
+  id: string,
+): Promise<JobLivenessCheckResponse> {
+  return fetchApi<JobLivenessCheckResponse>(`/jobs/${id}/liveness`, {
+    method: "POST",
   });
 }
 

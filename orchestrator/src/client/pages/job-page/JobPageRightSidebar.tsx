@@ -10,6 +10,7 @@ import {
   History,
   MoreHorizontal,
   PlusCircle,
+  Radar,
   RefreshCcw,
   RotateCcw,
   Sparkles,
@@ -59,6 +60,7 @@ type JobPageRightSidebarProps = {
   onCopyJobInfo: () => void;
   onRescore: () => void;
   onCheckSponsor: () => void;
+  onCheckLiveness: () => void;
   onRevertToReady: () => void;
   onRevertToDiscovered: () => void;
 };
@@ -93,6 +95,7 @@ export const JobPageRightSidebar: React.FC<JobPageRightSidebarProps> = ({
   onCopyJobInfo,
   onRescore,
   onCheckSponsor,
+  onCheckLiveness,
   onRevertToReady,
   onRevertToDiscovered,
 }) => (
@@ -116,6 +119,20 @@ export const JobPageRightSidebar: React.FC<JobPageRightSidebarProps> = ({
           </Button>
         )}
 
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full justify-start"
+          onClick={onCheckLiveness}
+          disabled={isBusy || !jobLink}
+          title="Token-free HTTP check. Marks clearly closed postings as expired."
+        >
+          <Radar className="mr-1.5 h-3.5 w-3.5" />
+          Check liveness
+          <span className="ml-auto text-[10px] text-muted-foreground">
+            No tokens
+          </span>
+        </Button>
 
         {isDiscovered && (
           <Button
