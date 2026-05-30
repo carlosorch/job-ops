@@ -13,6 +13,7 @@
 }
 
 #let text-of(value) = with-default(value, "")
+#let markup-text(value) = eval(text-of(value), mode: "markup")
 #let list-of(value) = with-default(value, ())
 #let text-of-item(item, key) = text-of(item.at(key, default: ""))
 #let section-titles = with-default(source.at("sectionTitles", default: (:)), (:))
@@ -97,8 +98,8 @@
 
 #let bullets-of(entry) = {
   list-of(entry.at("bullets", default: ()))
-    .map(item => text-of(item))
-    .filter(item => item != "")
+    .filter(item => text-of(item) != "")
+    .map(item => markup-text(item))
 }
 
 #let bullet-block(entry) = {
@@ -217,7 +218,7 @@
 #let summary = text-of(source.at("summary", default: ""))
 #if summary != "" [
   == #text-of(section-titles.at("summary", default: "Summary"))
-  #summary
+  #markup-text(summary)
 ]
 
 #let custom-fields = list-of(source.at("customFieldItems", default: ()))
