@@ -41,10 +41,12 @@ import {
   ExternalLink,
   FileText,
   FolderKanban,
+  History,
   Link2,
   Loader2,
   MoreHorizontal,
   RefreshCcw,
+  RotateCcw,
   Sparkles,
   Star,
   Upload,
@@ -465,6 +467,48 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
     }
   }, [handleJobMoved, onJobUpdated, selectedJob, skipJobMutation]);
 
+  const handleRevertToReady = useCallback(async () => {
+    if (!selectedJob) return;
+    try {
+      setIsMoving(true);
+      await api.updateJob(selectedJob.id, { status: "ready" });
+      trackProductEvent("jobs_job_action_completed", {
+        action: "revert_ready",
+        result: "success",
+        from_status: selectedJob.status,
+        to_status: "ready",
+      });
+      toast.success("Reverted to Ready");
+      handleJobMoved(selectedJob.id);
+      await onJobUpdated();
+    } catch (error) {
+      showErrorToast(error, "Failed to revert to Ready");
+    } finally {
+      setIsMoving(false);
+    }
+  }, [handleJobMoved, onJobUpdated, selectedJob]);
+
+  const handleRevertToDiscovered = useCallback(async () => {
+    if (!selectedJob) return;
+    try {
+      setIsMoving(true);
+      await api.updateJob(selectedJob.id, { status: "discovered" });
+      trackProductEvent("jobs_job_action_completed", {
+        action: "revert_discovered",
+        result: "success",
+        from_status: selectedJob.status,
+        to_status: "discovered",
+      });
+      toast.success("Reverted to Discovered");
+      handleJobMoved(selectedJob.id);
+      await onJobUpdated();
+    } catch (error) {
+      showErrorToast(error, "Failed to revert to Discovered");
+    } finally {
+      setIsMoving(false);
+    }
+  }, [handleJobMoved, onJobUpdated, selectedJob]);
+
   const handleOpenPdf = useCallback(() => {
     if (!selectedJob || !selectedJob.pdfPath || isPdfRegenerating(selectedJob))
       return;
@@ -689,6 +733,22 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
                       {pdfLabels.download}
                     </DropdownMenuItem>
                   </>
+                )}
+                {(selectedJob.status === "applied" ||
+                  selectedJob.status === "in_progress") && (
+                  <DropdownMenuItem onSelect={handleRevertToReady}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Revert to Ready
+                  </DropdownMenuItem>
+                )}
+                {(selectedJob.status === "ready" ||
+                  selectedJob.status === "applied" ||
+                  selectedJob.status === "in_progress" ||
+                  selectedJob.status === "skipped") && (
+                  <DropdownMenuItem onSelect={handleRevertToDiscovered}>
+                    <History className="mr-2 h-4 w-4" />
+                    Revert to Discovered
+                  </DropdownMenuItem>
                 )}
                 {canSkip && (
                   <>

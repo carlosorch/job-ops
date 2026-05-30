@@ -641,9 +641,96 @@ export async function updateJob(
 ): Promise<Job | null> {
   const now = new Date().toISOString();
   const tenantId = getActiveTenantId();
+
+  const currentJob = await getJobById(id);
+  if (!currentJob) return null;
+
   const { locationEvidence, ...updateFields } = input;
   const clearsBriefForDescriptionEdit =
     input.jobDescription !== undefined && input.jobBrief === undefined;
+
+  const regressionFields: Partial<typeof jobs.$inferInsert> = {};
+
+  if (
+    input.status === "ready" &&
+    ["applied", "in_progress"].includes(currentJob.status)
+  ) {
+    regressionFields.appliedAt = null;
+    regressionFields.outcome = null;
+    regressionFields.closedAt = null;
+
+    // Clean up stageEvents and interviews
+    await db
+      .delete(schema.stageEvents)
+      .where(
+        and(
+          eq(schema.stageEvents.tenantId, tenantId),
+          eq(schema.stageEvents.applicationId, id),
+        ),
+      )
+      .run();
+    await db
+      .delete(schema.interviews)
+      .where(
+        and(
+          eq(schema.interviews.tenantId, tenantId),
+          eq(schema.interviews.applicationId, id),
+        ),
+      )
+      .run();
+  } else if (
+    input.status === "discovered" &&
+    ["ready", "applied", "in_progress", "skipped", "expired"].includes(
+      currentJob.status,
+    )
+  ) {
+    regressionFields.readyAt = null;
+    regressionFields.processedAt = null;
+    regressionFields.appliedAt = null;
+    regressionFields.outcome = null;
+    regressionFields.closedAt = null;
+    regressionFields.pdfPath = null;
+    regressionFields.pdfSource = null;
+    regressionFields.pdfRegenerating = false;
+    regressionFields.pdfFingerprint = null;
+    regressionFields.pdfGeneratedAt = null;
+    regressionFields.tailoredSummary = null;
+    regressionFields.tailoredHeadline = null;
+    regressionFields.tailoredSkills = null;
+    regressionFields.selectedProjectIds = null;
+    regressionFields.tracerLinksEnabled = false;
+    regressionFields.jobBrief = null;
+
+    // Clean up stageEvents, interviews, and tracerLinks
+    await db
+      .delete(schema.stageEvents)
+      .where(
+        and(
+          eq(schema.stageEvents.tenantId, tenantId),
+          eq(schema.stageEvents.applicationId, id),
+        ),
+      )
+      .run();
+    await db
+      .delete(schema.interviews)
+      .where(
+        and(
+          eq(schema.interviews.tenantId, tenantId),
+          eq(schema.interviews.applicationId, id),
+        ),
+      )
+      .run();
+    await db
+      .delete(schema.tracerLinks)
+      .where(
+        and(
+          eq(schema.tracerLinks.tenantId, tenantId),
+          eq(schema.tracerLinks.jobId, id),
+        ),
+      )
+      .run();
+  }
+
   const readyAtUpdate =
     input.readyAt !== undefined
       ? { readyAt: input.readyAt }
@@ -660,6 +747,7 @@ export async function updateJob(
   await db
     .update(jobs)
     .set({
+      ...regressionFields,
       ...updateFields,
       ...(clearsBriefForDescriptionEdit ? { jobBrief: null } : {}),
       ...(locationEvidence !== undefined

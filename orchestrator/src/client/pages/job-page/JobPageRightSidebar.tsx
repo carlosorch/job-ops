@@ -7,9 +7,11 @@ import {
   Edit2,
   ExternalLink,
   FileText,
+  History,
   MoreHorizontal,
   PlusCircle,
   RefreshCcw,
+  RotateCcw,
   Sparkles,
   Upload,
   XCircle,
@@ -57,6 +59,8 @@ type JobPageRightSidebarProps = {
   onCopyJobInfo: () => void;
   onRescore: () => void;
   onCheckSponsor: () => void;
+  onRevertToReady: () => void;
+  onRevertToDiscovered: () => void;
 };
 
 export const JobPageRightSidebar: React.FC<JobPageRightSidebarProps> = ({
@@ -89,6 +93,8 @@ export const JobPageRightSidebar: React.FC<JobPageRightSidebarProps> = ({
   onCopyJobInfo,
   onRescore,
   onCheckSponsor,
+  onRevertToReady,
+  onRevertToDiscovered,
 }) => (
   <aside className="space-y-4 xl:sticky xl:top-5">
     <section className="rounded-xl border border-border/50 bg-card/85 p-3">
@@ -109,6 +115,7 @@ export const JobPageRightSidebar: React.FC<JobPageRightSidebarProps> = ({
             </a>
           </Button>
         )}
+
 
         {isDiscovered && (
           <Button
@@ -262,6 +269,21 @@ export const JobPageRightSidebar: React.FC<JobPageRightSidebarProps> = ({
               <DropdownMenuItem onSelect={onRescore}>
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Recalculate match
+              </DropdownMenuItem>
+            )}
+            {(isApplied || isInProgress) && (
+              <DropdownMenuItem onSelect={onRevertToReady}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Revert to Ready
+              </DropdownMenuItem>
+            )}
+            {(isReady ||
+              isApplied ||
+              isInProgress ||
+              job.status === "skipped") && (
+              <DropdownMenuItem onSelect={onRevertToDiscovered}>
+                <History className="mr-2 h-4 w-4" />
+                Revert to Discovered
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

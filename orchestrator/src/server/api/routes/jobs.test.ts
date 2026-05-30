@@ -1256,6 +1256,141 @@ describe.sequential("Jobs API routes", () => {
     expect(deleteBody.data.count).toBe(1);
   });
 
+  it("cleans up metadata, stageEvents, interviews, and tracerLinks on status regression", async () => {
+    const { createJob, updateJob } = await import("@server/repositories/jobs");
+    const { db, schema } = await import("@server/db/index");
+    const { eq } = await import("drizzle-orm");
+
+    // Create a job
+    const job = await createJob({
+      source: "manual",
+      title: "Regression Test Role",
+      employer: "Acme Corp",
+      jobUrl: "https://example.com/job/regression-test",
+      jobDescription: "Description text",
+    });
+
+    // Move to ready (simulate tailoring details)
+    await updateJob(job.id, {
+      status: "ready",
+      readyAt: new Date().toISOString(),
+      tailoredSummary: "Awesome tailored summary",
+      tailoredHeadline: "Experienced developer",
+      tailoredSkills: JSON.stringify([{ name: "JS", keywords: ["JS", "TS"] }]),
+      pdfPath: "/some/path/resume.pdf",
+      pdfSource: "generated",
+      tracerLinksEnabled: true,
+    });
+
+    // Create a mock tracer link
+    await db
+      .insert(schema.tracerLinks)
+      .values({
+        id: "mock-link-1",
+        tenantId: "tenant_default",
+        token: "mocktoken1",
+        jobId: job.id,
+        sourcePath: "/some/path/resume.pdf",
+        sourceLabel: "Resume PDF",
+        destinationUrl: "https://google.com",
+        destinationUrlHash: "hash123",
+        isActive: true,
+      })
+      .run();
+
+    // Move to applied
+    const appliedAt = new Date().toISOString();
+    await updateJob(job.id, {
+      status: "applied",
+      appliedAt,
+    });
+
+    // Move to in_progress and log stage event and interview
+    await updateJob(job.id, {
+      status: "in_progress",
+    });
+
+    await db
+      .insert(schema.stageEvents)
+      .values({
+        id: "mock-event-1",
+        tenantId: "tenant_default",
+        applicationId: job.id,
+        title: "Moved to onsite",
+        toStage: "onsite",
+        occurredAt: Date.now(),
+      })
+      .run();
+
+    await db
+      .insert(schema.interviews)
+      .values({
+        id: "mock-interview-1",
+        tenantId: "tenant_default",
+        applicationId: job.id,
+        scheduledAt: Date.now(),
+        type: "technical",
+      })
+      .run();
+
+    // 1. Revert back to ready
+    const revertReadyRes = await fetch(`${baseUrl}/api/jobs/${job.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "ready" }),
+    });
+    const revertReadyBody = await revertReadyRes.json();
+    expect(revertReadyRes.status).toBe(200);
+    expect(revertReadyBody.ok).toBe(true);
+    expect(revertReadyBody.data.status).toBe("ready");
+    expect(revertReadyBody.data.appliedAt).toBeNull();
+    expect(revertReadyBody.data.outcome).toBeNull();
+    expect(revertReadyBody.data.closedAt).toBeNull();
+
+    // Verify stageEvents and interviews are deleted
+    const eventsCount = await db
+      .select()
+      .from(schema.stageEvents)
+      .where(eq(schema.stageEvents.applicationId, job.id));
+    expect(eventsCount).toHaveLength(0);
+    const interviewsCount = await db
+      .select()
+      .from(schema.interviews)
+      .where(eq(schema.interviews.applicationId, job.id));
+    expect(interviewsCount).toHaveLength(0);
+
+    // Verify tracer links are still there (reverting to ready keeps tracer links)
+    const tracerLinksCountBefore = await db
+      .select()
+      .from(schema.tracerLinks)
+      .where(eq(schema.tracerLinks.jobId, job.id));
+    expect(tracerLinksCountBefore).toHaveLength(1);
+
+    // 2. Revert back to discovered
+    const revertDiscoveredRes = await fetch(`${baseUrl}/api/jobs/${job.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "discovered" }),
+    });
+    const revertDiscoveredBody = await revertDiscoveredRes.json();
+    expect(revertDiscoveredRes.status).toBe(200);
+    expect(revertDiscoveredBody.ok).toBe(true);
+    expect(revertDiscoveredBody.data.status).toBe("discovered");
+    expect(revertDiscoveredBody.data.readyAt).toBeNull();
+    expect(revertDiscoveredBody.data.pdfPath).toBeNull();
+    expect(revertDiscoveredBody.data.pdfSource).toBeNull();
+    expect(revertDiscoveredBody.data.tailoredSummary).toBeNull();
+    expect(revertDiscoveredBody.data.tailoredSkills).toBeNull();
+    expect(revertDiscoveredBody.data.tracerLinksEnabled).toBe(false);
+
+    // Verify tracer links are deleted
+    const tracerLinksCountAfter = await db
+      .select()
+      .from(schema.tracerLinks)
+      .where(eq(schema.tracerLinks.jobId, job.id));
+    expect(tracerLinksCountAfter).toHaveLength(0);
+  });
+
   it("clears a generated brief when the job description changes", async () => {
     const { createJob, updateJob } = await import("@server/repositories/jobs");
     const job = await createJob({

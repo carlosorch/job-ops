@@ -399,6 +399,28 @@ export const JobPage: React.FC = () => {
     });
   };
 
+  const handleRevertToReady = async () => {
+    await runAction("revert-ready", async () => {
+      if (!job) return;
+      await updateJobMutation.mutateAsync({
+        id: job.id,
+        update: { status: "ready" },
+      });
+      toast.success("Reverted to Ready");
+    });
+  };
+
+  const handleRevertToDiscovered = async () => {
+    await runAction("revert-discovered", async () => {
+      if (!job) return;
+      await updateJobMutation.mutateAsync({
+        id: job.id,
+        update: { status: "discovered" },
+      });
+      toast.success("Reverted to Discovered");
+    });
+  };
+
   const handleRescore = async () => {
     await runAction("rescore", async () => {
       if (!job) return;
@@ -913,6 +935,8 @@ export const JobPage: React.FC = () => {
               onCopyJobInfo={() => void handleCopyJobInfo()}
               onRescore={() => void handleRescore()}
               onCheckSponsor={() => void handleCheckSponsor()}
+              onRevertToReady={() => void handleRevertToReady()}
+              onRevertToDiscovered={() => void handleRevertToDiscovered()}
             />
           )}
         </div>
